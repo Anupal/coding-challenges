@@ -1,4 +1,4 @@
 build:
-	go build ggwc.go
+	go build ccwc.go
 
 .PHONY:

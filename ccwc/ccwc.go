@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"log"
 	"os"
@@ -34,13 +35,13 @@ func main() {
 		if err != nil {
 			log.Fatalf("File '%s' not readable", fileName)
 		}
+		fileData = bytes.TrimRight(fileData, "\x00")
 
 		fileDataString := string(fileData)
-
-		charCount := len(fileData)
+		charCount := len(fileDataString)
 
 		lines := strings.Split(fileDataString, "\n")
-		lineCount := len(lines)
+		lineCount := len(lines) - 1
 
 		wordCount := 0
 		for _, line := range lines {
