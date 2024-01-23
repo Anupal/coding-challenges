@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 )
 
 func main() {
@@ -19,7 +20,7 @@ func main() {
 	if !(flagBytes && flagChars && flagLines && flatWords) {
 		flagBytes = true
 		flagLines = true
-		flagLines = true
+		flatWords = true
 	}
 
 	// loop over fileName list
@@ -33,7 +34,23 @@ func main() {
 		if err != nil {
 			log.Fatalf("File '%s' not readable", fileName)
 		}
+
+		fileDataString := string(fileData)
+
+		charCount := len(fileData)
+
+		lines := strings.Split(fileDataString, "\n")
+		lineCount := len(lines)
+
+		wordCount := 0
+		for _, line := range lines {
+			wordCount += len(strings.Fields(line))
+		}
+
 		fmt.Printf("Byte count for file '%s': %d\n", fileName, byteCount)
+		fmt.Printf("Line count for file '%s': %d\n", fileName, lineCount)
+		fmt.Printf("Word count for file '%s': %d\n", fileName, wordCount)
+		fmt.Printf("Char count for file '%s': %d\n", fileName, charCount)
 	}
 
 }
