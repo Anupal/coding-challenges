@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -48,10 +49,23 @@ func main() {
 			wordCount += len(strings.Fields(line))
 		}
 
-		fmt.Printf("Byte count for file '%s': %d\n", fileName, byteCount)
-		fmt.Printf("Line count for file '%s': %d\n", fileName, lineCount)
-		fmt.Printf("Word count for file '%s': %d\n", fileName, wordCount)
-		fmt.Printf("Char count for file '%s': %d\n", fileName, charCount)
+		byteCountLen := len(strconv.Itoa(byteCount))
+		lineCountLen := len(strconv.Itoa(lineCount))
+		wordCountLen := len(strconv.Itoa(wordCount))
+		charCountLen := len(strconv.Itoa(charCount))
+		maximumLen := max(byteCountLen, lineCountLen, wordCountLen, charCountLen)
+
+		fmt.Printf("%*d ", maximumLen, lineCount)
+		fmt.Printf("%*d ", maximumLen, wordCount)
+		fmt.Printf("%*d ", maximumLen, byteCount)
+
+		//fmt.Printf("%*d ", maximumLen, charCount)
+		fmt.Println()
+
+		//fmt.Printf("Byte count for file '%s': %d\n", fileName, byteCount)
+		//fmt.Printf("Line count for file '%s': %d\n", fileName, lineCount)
+		//fmt.Printf("Word count for file '%s': %d\n", fileName, wordCount)
+		//fmt.Printf("Char count for file '%s': %d\n", fileName, charCount)
 	}
 
 }
