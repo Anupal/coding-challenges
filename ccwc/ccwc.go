@@ -22,22 +22,16 @@ func maxWidth(flags map[string]bool, fileDataList []fileData) int {
 	maximum := 0
 
 	for _, file := range fileDataList {
-		includedValues := make([]int, 0, 4)
-		if flags["lines"] {
-			includedValues = append(includedValues, len(strconv.Itoa(file.lines)))
+		fieldLengths := map[string]int{
+			"lines": len(strconv.Itoa(file.lines)),
+			"words": len(strconv.Itoa(file.words)),
+			"bytes": len(strconv.Itoa(file.bytes)),
+			"chars": len(strconv.Itoa(file.chars)),
 		}
-		if flags["words"] {
-			includedValues = append(includedValues, len(strconv.Itoa(file.words)))
-		}
-		if flags["bytes"] {
-			includedValues = append(includedValues, len(strconv.Itoa(file.bytes)))
-		}
-		if flags["chars"] {
-			includedValues = append(includedValues, len(strconv.Itoa(file.chars)))
-		}
-		for _, value := range includedValues {
-			if value > maximum {
-				maximum = value
+
+		for flag, length := range fieldLengths {
+			if flags[flag] && length > maximum {
+				maximum = length
 			}
 		}
 	}
@@ -120,13 +114,13 @@ func main() {
 
 // bytes bool, chars bool, lines bool, words bool
 func captureFlags(args []string) (map[string]bool, []string) {
-	flags := make(map[string]bool)
+	flags := map[string]bool{
+		"bytes": false,
+		"chars": false,
+		"lines": false,
+		"words": false,
+	}
 	fileList := make([]string, 0, 10)
-
-	flags["bytes"] = false
-	flags["chars"] = false
-	flags["lines"] = false
-	flags["words"] = false
 
 	for _, arg := range args[1:] {
 		switch arg {
