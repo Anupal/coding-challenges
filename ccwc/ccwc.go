@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"log"
@@ -10,15 +11,15 @@ import (
 	"strings"
 )
 
-type fileData struct {
-	name  string
+type data struct {
 	bytes int
 	chars int
 	lines int
 	words int
+	name  string
 }
 
-func maxWidth(flags map[string]bool, fileDataList []fileData) int {
+func maxWidth(flags map[string]bool, fileDataList []data) int {
 	maximum := 0
 
 	for _, file := range fileDataList {
@@ -39,47 +40,71 @@ func maxWidth(flags map[string]bool, fileDataList []fileData) int {
 	return maximum
 }
 
-func (file *fileData) parseFile(filePath string) {
-	_, file.name = path.Split(filePath)
+func (d *data) parseStdio() {
+	d.name = ""
+
+	stdioData := make([]byte, 0, 100)
+
+	stdinScanner := bufio.NewScanner(os.Stdin)
+	for stdinScanner.Scan() {
+		stdioData = append(stdioData, stdinScanner.Bytes()...)
+	}
+
+	d.bytes = len(stdioData)
+
+	fileDataString := string(stdioData)
+	d.chars = len(fileDataString)
+
+	lines := strings.Split(fileDataString, "\n")
+	d.lines = len(lines) - 1
+
+	d.words = 0
+	for _, line := range lines {
+		d.words += len(strings.Fields(line))
+	}
+}
+
+func (d *data) parseFile(filePath string) {
+	_, d.name = path.Split(filePath)
 
 	filePtr, err := os.Open(filePath)
 	if err != nil {
-		log.Fatalf("File '%s' not found!", file.name)
+		log.Fatalf("File '%s' not found!", d.name)
 	}
 
 	fileData := make([]byte, 100)
-	file.bytes, err = filePtr.Read(fileData)
+	d.bytes, err = filePtr.Read(fileData)
 	if err != nil {
-		log.Fatalf("File '%s' not readable", file.name)
+		log.Fatalf("File '%s' not readable", d.name)
 	}
 	fileData = bytes.TrimRight(fileData, "\x00")
 
 	fileDataString := string(fileData)
-	file.chars = len(fileDataString)
+	d.chars = len(fileDataString)
 
 	lines := strings.Split(fileDataString, "\n")
-	file.lines = len(lines) - 1
+	d.lines = len(lines) - 1
 
-	file.words = 0
+	d.words = 0
 	for _, line := range lines {
-		file.words += len(strings.Fields(line))
+		d.words += len(strings.Fields(line))
 	}
 }
 
-func (file *fileData) displayRow(flags map[string]bool, maximumWidth int) {
+func (d *data) displayRow(flags map[string]bool, maximumWidth int) {
 	if flags["lines"] {
-		fmt.Printf("%*d ", maximumWidth, file.lines)
+		fmt.Printf("%*d ", maximumWidth, d.lines)
 	}
 	if flags["words"] {
-		fmt.Printf("%*d ", maximumWidth, file.words)
+		fmt.Printf("%*d ", maximumWidth, d.words)
 	}
 	if flags["bytes"] {
-		fmt.Printf("%*d ", maximumWidth, file.bytes)
+		fmt.Printf("%*d ", maximumWidth, d.bytes)
 	}
 	if flags["chars"] {
-		fmt.Printf("%*d ", maximumWidth, file.chars)
+		fmt.Printf("%*d ", maximumWidth, d.chars)
 	}
-	fmt.Printf("%s\n", file.name)
+	fmt.Printf("%s\n", d.name)
 }
 
 func main() {
@@ -99,16 +124,25 @@ func main() {
 		flags["words"] = true
 	}
 
-	fileDataList := make([]fileData, len(fileList))
-	// loop over file list
-	for i, filePath := range fileList {
-		fileDataList[i].parseFile(filePath)
-	}
+	if len(fileList) == 0 {
+		stdio := data{}
+		stdio.parseStdio()
+		maximumWidth := maxWidth(flags, []data{stdio})
 
-	maximumWidth := maxWidth(flags, fileDataList)
+		stdio.displayRow(flags, maximumWidth)
+	} else {
 
-	for _, file := range fileDataList {
-		file.displayRow(flags, maximumWidth)
+		fileDataList := make([]data, len(fileList))
+		// loop over file list
+		for i, filePath := range fileList {
+			fileDataList[i].parseFile(filePath)
+		}
+
+		maximumWidth := maxWidth(flags, fileDataList)
+
+		for _, file := range fileDataList {
+			file.displayRow(flags, maximumWidth)
+		}
 	}
 }
 
