@@ -1,111 +1,9 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
-	"fmt"
-	"log"
+	"github.com/anupal/coding-challenges/ccwc/utils"
 	"os"
-	"path"
-	"strconv"
-	"strings"
 )
-
-type data struct {
-	bytes int
-	chars int
-	lines int
-	words int
-	name  string
-}
-
-func maxWidth(flags map[string]bool, fileDataList []data) int {
-	maximum := 0
-
-	for _, file := range fileDataList {
-		fieldLengths := map[string]int{
-			"lines": len(strconv.Itoa(file.lines)),
-			"words": len(strconv.Itoa(file.words)),
-			"bytes": len(strconv.Itoa(file.bytes)),
-			"chars": len(strconv.Itoa(file.chars)),
-		}
-
-		for flag, length := range fieldLengths {
-			if flags[flag] && length > maximum {
-				maximum = length
-			}
-		}
-	}
-
-	return maximum
-}
-
-func (d *data) parseStdio() {
-	d.name = ""
-
-	stdioData := make([]byte, 0, 100)
-
-	stdinScanner := bufio.NewScanner(os.Stdin)
-	for stdinScanner.Scan() {
-		stdioData = append(stdioData, stdinScanner.Bytes()...)
-	}
-
-	d.bytes = len(stdioData)
-
-	fileDataString := string(stdioData)
-	d.chars = len(fileDataString)
-
-	lines := strings.Split(fileDataString, "\n")
-	d.lines = len(lines) - 1
-
-	d.words = 0
-	for _, line := range lines {
-		d.words += len(strings.Fields(line))
-	}
-}
-
-func (d *data) parseFile(filePath string) {
-	_, d.name = path.Split(filePath)
-
-	filePtr, err := os.Open(filePath)
-	if err != nil {
-		log.Fatalf("File '%s' not found!", d.name)
-	}
-
-	fileData := make([]byte, 100)
-	d.bytes, err = filePtr.Read(fileData)
-	if err != nil {
-		log.Fatalf("File '%s' not readable", d.name)
-	}
-	fileData = bytes.TrimRight(fileData, "\x00")
-
-	fileDataString := string(fileData)
-	d.chars = len(fileDataString)
-
-	lines := strings.Split(fileDataString, "\n")
-	d.lines = len(lines) - 1
-
-	d.words = 0
-	for _, line := range lines {
-		d.words += len(strings.Fields(line))
-	}
-}
-
-func (d *data) displayRow(flags map[string]bool, maximumWidth int) {
-	if flags["lines"] {
-		fmt.Printf("%*d ", maximumWidth, d.lines)
-	}
-	if flags["words"] {
-		fmt.Printf("%*d ", maximumWidth, d.words)
-	}
-	if flags["bytes"] {
-		fmt.Printf("%*d ", maximumWidth, d.bytes)
-	}
-	if flags["chars"] {
-		fmt.Printf("%*d ", maximumWidth, d.chars)
-	}
-	fmt.Printf("%s\n", d.name)
-}
 
 func main() {
 	cmdlineArgs := os.Args
@@ -125,28 +23,28 @@ func main() {
 	}
 
 	if len(fileList) == 0 {
-		stdio := data{}
-		stdio.parseStdio()
-		maximumWidth := maxWidth(flags, []data{stdio})
+		stdio := utils.Data{}
+		stdio.ParseStdio()
+		maximumWidth := utils.MaxWidth(flags, []utils.Data{stdio})
 
-		stdio.displayRow(flags, maximumWidth)
+		stdio.DisplayRow(flags, maximumWidth)
 	} else {
 
-		fileDataList := make([]data, len(fileList))
+		fileDataList := make([]utils.Data, len(fileList))
 		// loop over file list
 		for i, filePath := range fileList {
-			fileDataList[i].parseFile(filePath)
+			fileDataList[i].ParseFile(filePath)
 		}
 
-		maximumWidth := maxWidth(flags, fileDataList)
+		maximumWidth := utils.MaxWidth(flags, fileDataList)
 
 		for _, file := range fileDataList {
-			file.displayRow(flags, maximumWidth)
+			file.DisplayRow(flags, maximumWidth)
 		}
 	}
 }
 
-// bytes bool, chars bool, lines bool, words bool
+// captureFlags parses cmdline flags and file list
 func captureFlags(args []string) (map[string]bool, []string) {
 	flags := map[string]bool{
 		"bytes": false,
