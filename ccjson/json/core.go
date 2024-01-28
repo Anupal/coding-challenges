@@ -66,6 +66,9 @@ func ParseObject(i int, jsonString string) (Object, error) {
 				k = k_
 			}
 			j = k
+			if j == len(jsonString) {
+				return nil, errors.New("expected }, but ran out of string")
+			}
 		}
 		return object, nil
 	} else {
