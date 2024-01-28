@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type List []any
+type Array []any
 type Object map[any]any
 
 func ParseString(i int, jsonString string) (int, string, error) {
@@ -19,7 +19,7 @@ func ParseString(i int, jsonString string) (int, string, error) {
 
 			j += 1
 			if j == len(jsonString) {
-				return -1, "", errors.New("expected \", but ran out of string")
+				return i, "", errors.New("expected \", but ran out of string")
 			}
 		}
 		return j + 1, jsonString[i+1 : j], nil
@@ -28,7 +28,7 @@ func ParseString(i int, jsonString string) (int, string, error) {
 	}
 }
 
-func ParseObject(i int, jsonString string) (Object, error) {
+func ParseObject(i int, jsonString string) (int, Object, error) {
 	object := Object{}
 	totalLength := len(jsonString)
 	if jsonString[i] == '{' {
@@ -36,7 +36,7 @@ func ParseObject(i int, jsonString string) (Object, error) {
 		for jsonString[j] != '}' {
 			if j != i+1 {
 				if jsonString[j] != ',' {
-					return nil, errors.New(fmt.Sprintf("expected , at %d", j))
+					return i, nil, errors.New(fmt.Sprintf("expected , at %d", j))
 				} else {
 					j += 1
 				}
@@ -45,33 +45,116 @@ func ParseObject(i int, jsonString string) (Object, error) {
 			// check key
 			k, key, err := ParseString(j, jsonString)
 			if err != nil {
-				return nil, errors.New(fmt.Sprintf("not a valid key - expected a string at %d", j))
+				return i, nil, errors.New(fmt.Sprintf("not a valid key - expected a string at %d", j))
 			}
 			if k >= totalLength || jsonString[k] != ':' {
-				return nil, errors.New(fmt.Sprintf("expected : at %d", k))
+				return i, nil, errors.New(fmt.Sprintf("expected : at %d", k))
 			}
 			// parse based on value type
 			j = k + 1
 			if j >= totalLength {
-				return nil, errors.New(fmt.Sprintf("json ended without value for key at %d", j))
+				return i, nil, errors.New(fmt.Sprintf("json ended without value for key at %d", j))
 			}
 
-			// string
 			if jsonString[j] == '"' {
+				// string
 				k_, value, err := ParseString(j, jsonString)
 				if err != nil {
-					return nil, errors.New(fmt.Sprintf("not a valid value string at %d", j))
+					return i, nil, errors.New(fmt.Sprintf("not a valid value string at %d", j))
 				}
 				object[key] = value
 				k = k_
+			} else if jsonString[j] == '[' {
+				// list
+				k_, value, err := ParseArray(j, jsonString)
+				if err != nil {
+					return i, nil, errors.New(fmt.Sprintf("not a valid array at %d", j))
+				}
+				object[key] = value
+				k = k_
+			} else if jsonString[j] == '{' {
+				// object
+				k_, value, err := ParseObject(j, jsonString)
+				if err != nil {
+					return i, nil, errors.New(fmt.Sprintf("not a valid object at %d", j))
+				}
+				object[key] = value
+				k = k_
+			} else if jsonString[j] == ' ' || jsonString[j] == '\n' {
+				// space or newline
+				k = j + 1
+			} else {
+				// unknown character
+				return i, nil, errors.New(fmt.Sprintf("invalid character at %d", j))
 			}
+
 			j = k
 			if j == len(jsonString) {
-				return nil, errors.New("expected }, but ran out of string")
+				return i, nil, errors.New("expected }, but ran out of string")
 			}
 		}
-		return object, nil
+		return j + 1, object, nil
 	} else {
-		return nil, errors.New("expected {, this is not an object")
+		return i, nil, errors.New("expected {, this is not an object")
+	}
+}
+
+func ParseArray(i int, jsonString string) (int, Array, error) {
+	array := Array{}
+	totalLength := len(jsonString)
+	if jsonString[i] == '[' {
+		j := i + 1
+		for jsonString[j] != ']' {
+			if j != i+1 {
+				if jsonString[j] != ',' {
+					return i, nil, errors.New(fmt.Sprintf("expected , at %d", j))
+				} else {
+					j += 1
+				}
+			}
+
+			// parse based on value type
+			k := j
+			if jsonString[j] == '"' {
+				// string
+				k_, value, err := ParseString(j, jsonString)
+				if err != nil {
+					return i, nil, errors.New(fmt.Sprintf("not a valid value string at %d", j))
+				}
+				array = append(array, value)
+				k = k_
+			} else if jsonString[j] == '[' {
+				// list
+				k_, value, err := ParseArray(j, jsonString)
+				if err != nil {
+					return i, nil, errors.New(fmt.Sprintf("not a valid array at %d", j))
+				}
+				array = append(array, value)
+				k = k_
+			} else if jsonString[j] == '{' {
+				// object
+				k_, value, err := ParseObject(j, jsonString)
+				if err != nil {
+					return i, nil, errors.New(fmt.Sprintf("not a valid object at %d", j))
+				}
+				array = append(array, value)
+				k = k_
+			} else if jsonString[j] == ' ' || jsonString[j] == '\n' {
+				// space or newline
+				k = j + 1
+			} else {
+				// unknown character
+				return i, nil, errors.New(fmt.Sprintf("invalid character at %d", j))
+			}
+
+			j = k
+			if j == totalLength {
+				return i, nil, errors.New("expected ], but ran out of string")
+			}
+		}
+
+		return j + 1, array, nil
+	} else {
+		return i, nil, errors.New("expected [, this is not an list")
 	}
 }
